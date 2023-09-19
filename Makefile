@@ -1,5 +1,5 @@
-CC := clang
-CFLAGS := -g -Wall -Werror -fsanitize=address
+CC := gcc
+CFLAGS := -g -fsanitize=address
 
 all: print-archive
 

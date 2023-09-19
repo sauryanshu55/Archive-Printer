@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include "print-archive.h"
 
 void print_contents(uint8_t* data, size_t size);
 
@@ -29,7 +30,7 @@ int main(int argc, char** argv) {
 
   // Get the size of the file
   size_t size = ftell(input);
-
+  // printf("%ld\n",size);
   // Seek back to the beginning of the file
   if (fseek(input, 0, SEEK_SET) != 0) {
     perror("Unable to seek to beginning of file");
@@ -62,6 +63,48 @@ int main(int argc, char** argv) {
   return 0;
 }
 
+void get_header_metadata(AR_HEADER *header_metadata, uint8_t* data, int cur_pos){
+  int fname_len=0;
+  for (int i=0;i<16;i++){
+    if (data[i]!=47){
+      // printf("%c\n",data[i]);
+      fname_len++;
+    } 
+    else{
+      break;
+    }
+  }
+  
+  header_metadata->file_identifier = (char*)malloc(fname_len + 1);
+  for (int i=0;i<fname_len;i++){
+    header_metadata->file_identifier[i]=(char)data[i];
+  }
+  header_metadata->file_identifier[fname_len] = '\0';
+  // header_metadata->file_identifier=fname;
+  // printf("%s\n",header_metadata->file_identifier);
+
+  int fsize_len=0;
+  for (int i=48;i<58;i++){
+    if (data[i]!=32){
+      fsize_len++;
+    }
+    else{
+      break;
+    }
+  }
+
+  char *fsize_s = (char*)malloc(fsize_len + 1);
+  for (int i=48;i<48+fsize_len;i++){
+    // printf("%c\n",data[i]);
+    fsize_s[i-48]=data[i];
+  }
+  fsize_s[fsize_len] = '\0';
+  // printf("%d\n",atoi(fsize_s));
+  header_metadata->file_size=atoi(fsize_s);
+  // if (header_metadata->file_size%2!=0) header_metadata->file_size--;
+  // free(fname);
+  free(fsize_s);
+}
 /**
  * This function should print the name of each file in the archive followed by its contents.
  *
@@ -69,5 +112,16 @@ int main(int argc, char** argv) {
  * \param size This is the number of bytes in the file.
  */
 void print_contents(uint8_t* data, size_t size) {
-  // TODO: Implement me!
+  int cur_pos=8;
+  data+=cur_pos;
+
+  AR_HEADER *header_metadata=malloc(sizeof(AR_HEADER)); 
+  get_header_metadata(header_metadata,data, cur_pos);
+  printf("%s\n", header_metadata->file_identifier);
+  printf("%d\n", header_metadata->file_size);
+  for (int i=60;i<60+header_metadata->file_size;i++){
+    printf("%c",data[i]);
+  }
+  free(header_metadata->file_identifier);
+  free(header_metadata);
 }
